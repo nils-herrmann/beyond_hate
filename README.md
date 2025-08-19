@@ -26,8 +26,8 @@ cd beyond_hate
    ```bash
    poetry install
    ```
-   
-3.2 To find the interpreter path for Poetry, run:
+
+2.3 To find the interpreter path for Poetry, run:
    ```bash
    poetry run which python
    ```
