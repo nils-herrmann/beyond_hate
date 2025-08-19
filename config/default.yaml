@@ -1,0 +1,54 @@
+base_dir: "/workspace/disinfo"
+data:
+  paths:
+    base: "${base_dir}/data"
+    hf: "${data.paths.base}/hateful_memes_hf"
+    kaggle: "${data.paths.base}/hateful_memes_kaggle"
+    all_hateful: "${data.paths.base}/hateful_memes_all"
+out:
+  hateful_memes_labels: "${base_dir}/out"
+  path: "${base_dir}/out"
+  runs: "${out.path}/runs"
+training:
+  # Pre-trained model
+  model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
+  load_in_4bit: true
+  use_gradient_checkpointing: "unsloth"
+  max_seq_length: 2048
+
+  # Input data
+  img_size: [512, 512]
+  img_color_padding: [255, 255, 255]
+
+  # LoRA parameters
+  lora_r: 128
+  lora_alpha: 256
+  lora_dropout: 0
+  
+  # Training configuration
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  warmup_steps: 40
+  num_train_epochs: 2
+  learning_rate: 4e-5
+  logging_steps: 3
+  optim: "adamw_8bit"
+  weight_decay: 0.01
+  lr_scheduler_type: "cosine"
+  seed: 3407
+  
+  # Vision finetuning specific
+  remove_unused_columns: false
+  dataset_text_field: ""
+  dataset_num_proc: 4
+  
+  # Save strategy
+  save_strategy: "epoch"
+  save_total_limit: 1
+  
+  # Reporting
+  report_to: "wandb"
+
+# Weights & Biases configuration
+wandb:
+  project: "hate-meme"

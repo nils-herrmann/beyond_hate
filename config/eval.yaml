@@ -1,0 +1,27 @@
+training:
+  model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
+  image_size: [512, 512]
+
+  # LoRA parameters
+  lora_r: 64
+  lora_alpha: 128
+  lora_dropout: 0
+
+  # Training configuration
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  warmup_steps: 5
+  num_train_epochs: 2
+  learning_rate: 2e-4
+  logging_steps: 3
+  optim: "adamw_8bit"
+  weight_decay: 0.1
+  lr_scheduler_type: "cosine"
+  seed: 3407
+
+  # Save strategy
+  save_strategy: "epoch"
+  save_total_limit: 1
+
+wandb:
+  project: "hate-meme"

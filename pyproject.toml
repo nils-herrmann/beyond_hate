@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hate_meme"
+version = "0.0.1"
+authors = [
+  { name="Nils A. Herrmann de Alba", email="nils_herrmann@outlook.de" },
+  { name="Jingyi He", email="holly.he@tum.de" },
+]
+description = "Beyond Hate: Differentiating Uncivil and Intolerant Speech in Multimodal Content Moderation"
+readme = "README.rst"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "dotenv",
+  "omegaconf",
+  "scikit-learn",
+  "unsloth",
+  "ipywidgets",
+  "wandb"
+]
+
+[tool.setuptools.packages.find]
+include = ["hate_meme", "hate_meme.*"]

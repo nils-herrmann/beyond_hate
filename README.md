@@ -1,0 +1,63 @@
+# Beyond Hate Project
+
+This project advances multimodal toxic speech detection by distinguishing between tone (incivility) and content (intolerance) in hateful meme classification. We propose a fine-grained annotation scheme that moves beyond binary hateful/not-hateful labels, enabling more nuanced and accurate content moderation through improved data quality and model training.
+
+## Paper
+The full paper is available in [BeyondHate.pdf](./BeyondHate.pdf).
+
+## Repository Structure
+
+```
+.
+├── .gitignore             # Git ignore rules
+├── dockerfile             # Docker configuration to build image with requirements
+├── pyproject.toml         # Project metadata and dependencies
+├── README.md              # Project documentation
+├── requirements.txt       # Python dependencies
+├── runpod_setup.sh       # RunPod environment setup script
+│
+├── config/                # Configuration files
+│   ├── default.yaml       # Default training configuration
+│   ├── eval.yaml         # Evaluation configuration
+│   └── nuanced.yaml      # Fine-grained annotation configuration
+│
+├── data/                  # Data storage (gitignored)
+│   └── hateful_memes_hf/  # Hateful Memes dataset from HuggingFace
+│       ├── train.jsonl
+│       ├── dev_seen.jsonl
+│       ├── dev_unseen.jsonl
+│       ├── test_seen.jsonl
+│       ├── test_unseen.jsonl
+│       └── img/           # Image files
+│
+├── hate_meme/             # Main package source code
+│   ├── __init__.py
+│   ├── analysis/          # Analysis and evaluation scripts
+│   │   └── bias_analysis.ipynb # False-positive, false-negative analysis
+│   ├── data_processing/   # Data handling and preprocessing
+│   │   ├── __init__.py
+│   │   ├── hateful_meme_annotation.ipynb # Annotate hateful meme dataset using ipwdigets
+│   │   ├── hateful_meme_downoad_validation # Validate hateful meme dataset from huggingface and kaggle
+│   │   ├── annotate.py    # Manual annotation helpers
+│   │   └── download_hateful_meme_hf.py  # Data download utilities
+│   └── train/             # Model training scripts
+│       ├── __init__.py
+│       ├── utils.py       # Training utilities and data processing functions
+│       ├── finetune_llava_hateful.py          # Fine-tune LLaVA for binary hateful/neutral classification
+│       ├── finetune_llava_hateful.ipynb       # Notebook version of binary classification training
+│       ├── finetune_llava_hateful_600.py      # Fine-tune LLaVA on 600-sample subset for binary classification
+│       ├── finetune_llava_nuanced.ipynb       # Fine-tune LLaVA for nuanced incivility/intolerance classification
+│       ├── hparam_tuning_llava_hateful.py     # Hyperparameter tuning for binary classification model
+│       ├── hparam_tuning_llava_nuanced.py     # Hyperparameter tuning for nuanced classification model
+│       ├── wandb_tuning_llava_nuanced.py      # Weights & Biases sweep for nuanced model hyperparameter optimization
+│       ├── inference_llava_hateful_600.py     # Run inference with 600-sample trained model
+│       ├── inference_llava_nuanced.ipynb      # Run inference with nuanced classification model
+│       └── eval_llava.ipynb                   # Evaluate model performance and analyze misclassifications
+│
+├── out/                   # Output directory (gitignored)
+│   ├── metrics/           # Training metrics and logs
+│   ├── runs/              # Model checkpoints and results
+│   └── predictions/       # Model predictions
+│
+└── wandb/                 # Weights & Biases logs (gitignored)
+```
