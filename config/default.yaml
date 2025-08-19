@@ -1,14 +1,10 @@
-base_dir: "/workspace/disinfo"
 data:
   paths:
-    base: "${base_dir}/data"
+    base: "data"
     hf: "${data.paths.base}/hateful_memes_hf"
-    kaggle: "${data.paths.base}/hateful_memes_kaggle"
-    all_hateful: "${data.paths.base}/hateful_memes_all"
 out:
-  hateful_memes_labels: "${base_dir}/out"
-  path: "${base_dir}/out"
-  runs: "${out.path}/runs"
+  path: "$out"
+  runs: "$out/runs"
 training:
   # Pre-trained model
   model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"

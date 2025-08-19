@@ -13,15 +13,25 @@ cd beyond_hate
 ```
 
 ### 2. Install dependencies (with Poetry)
-2.1 Install Poetry if you haven't already:
+2.1 Install [Poetry](https://python-poetry.org/docs/#installation) (with pip) if you haven't already:
    ```bash
    pip install poetry
    ```
 
-2.2 Install project dependencies:
+2.2.a Install minimal project dependencies for annotaiton
+   ```bash
+   poetry install --with=annotation
+   ```
+2.2.b Intall all project dependencies
    ```bash
    poetry install
    ```
+   
+3.2 To find the interpreter path for Poetry, run:
+   ```bash
+   poetry run which python
+   ```
+
 ### 3. Download data (with HuggingFace Hub)
 3.1 Set `HF_TOKEN` in [.env](.env) file. You can get your token from [HuggingFace](https://huggingface.co/settings/tokens).
 
