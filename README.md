@@ -5,6 +5,31 @@ This project advances multimodal toxic speech detection by distinguishing betwee
 ## Paper
 The full paper is available in [BeyondHate.pdf](./BeyondHate.pdf).
 
+## Installation guide
+### 1. Clone repository
+```bash
+git clone https://github.com/nils-herrmann/beyond_hate.git
+cd beyond_hate
+```
+
+### 2. Install dependencies (with Poetry)
+2.1 Install Poetry if you haven't already:
+   ```bash
+   pip install poetry
+   ```
+
+2.2 Install project dependencies:
+   ```bash
+   poetry install
+   ```
+### 3. Download data (with HuggingFace Hub)
+3.1 Set `HF_TOKEN` in [.env](.env) file. You can get your token from [HuggingFace](https://huggingface.co/settings/tokens).
+3.2 Execute the data download script:
+   ```bash
+   poetry run python hate_meme/data_processing/download_hateful_meme_hf.py
+   ```
+
+
 ## Repository Structure
 
 ```
