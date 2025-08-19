@@ -174,7 +174,7 @@ cython_debug/
 .pypirc
 
 # Local configuration files
-#data/
+data/hateful_memes_hf/
 unsloth_compiled_cache/
 out/metrics/
 out/runs/

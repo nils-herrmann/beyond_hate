@@ -24,6 +24,7 @@ cd beyond_hate
    ```
 ### 3. Download data (with HuggingFace Hub)
 3.1 Set `HF_TOKEN` in [.env](.env) file. You can get your token from [HuggingFace](https://huggingface.co/settings/tokens).
+
 3.2 Execute the data download script:
    ```bash
    poetry run python hate_meme/data_processing/download_hateful_meme_hf.py

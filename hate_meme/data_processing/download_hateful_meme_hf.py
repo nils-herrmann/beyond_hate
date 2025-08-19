@@ -1,17 +1,16 @@
 import os
-from dotenv import load_dotenv
-
 import huggingface_hub
+from dotenv import load_dotenv
 
 load_dotenv()
 
 # Paths
 hf_data_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "data", "hateful_memes"
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "hateful_memes_hf"
 )
 
 # Login to HF
-HF_TOKEN = os.getenv("HF_TOKEN")
+HF_TOKEN = os.getenv("HF_TOKEN")  
 huggingface_hub.login(HF_TOKEN)
 
 # Create dir if does not exist
