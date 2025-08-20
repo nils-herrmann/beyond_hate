@@ -20,7 +20,7 @@ cd beyond_hate
 
 2.2.a Install minimal project dependencies for annotaiton
    ```bash
-   poetry install --with=annotation
+   poetry install --without=dev
    ```
 2.2.b Intall all project dependencies
    ```bash
