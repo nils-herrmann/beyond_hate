@@ -1,7 +1,6 @@
 import io
 import json
 import os
-import time
 from datetime import datetime
 
 import ipywidgets as widgets
@@ -23,21 +22,21 @@ def display_fixed_image(img_path, size=(300, 300), bg_color=(255, 255, 255)):
 
 
 def load_existing_labels(output_file, annotator):
-        labeled = {}
-        if os.path.exists(output_file):
-            with open(output_file, 'r') as f:
-                for line in f:
-                    try:
-                        entry = json.loads(line)
-                        if entry.get('annotator') == annotator:
-                            labeled.setdefault(entry['id'], {})
-                            if 'label_incivility' in entry:
-                                labeled[entry['id']]['incivility'] = True
-                            if 'label_intolerance' in entry:
-                                labeled[entry['id']]['intolerance'] = True
-                    except Exception:
-                        continue
-        return labeled
+    labeled = {}
+    if os.path.exists(output_file):
+        with open(output_file, 'r') as f:
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    if entry.get('annotator') == annotator:
+                        labeled.setdefault(entry['id'], {})
+                        if 'label_incivility' in entry:
+                            labeled[entry['id']]['incivility'] = True
+                        if 'label_intolerance' in entry:
+                            labeled[entry['id']]['intolerance'] = True
+                except Exception:
+                    continue
+    return labeled
 
 
 def annotate_data(df, output_file, annotator):
@@ -45,7 +44,7 @@ def annotate_data(df, output_file, annotator):
     Annotate images in a Jupyter notebook for two categories: incivility and intolerance.
 
     Args:
-        df: pandas DataFrame with at least columns 'id' and 'img'
+        df: pandas DataFrame with at least columns 'id' and 'img_path'
         output_file: path to output JSON file
         annotator: string, annotator's name
     """
@@ -67,7 +66,7 @@ def annotate_data(df, output_file, annotator):
             "annotator": str(annotator),
             "label_incivility": int(label_incivility),
             "label_intolerance": int(label_intolerance),
-            "label_hateful": int(row['label_hf']),
+            "label_hateful": int(row['label']),
             "text": row['text'],
             "time": datetime.now().isoformat(),
             "img": str(row['img']),
@@ -84,7 +83,7 @@ def annotate_data(df, output_file, annotator):
             return
 
         row = to_annotate.iloc[idx]
-        img_path = row['img']
+        img_path = row['img_path']
 
         text_box_incivility = widgets.Text(description="Incivility:", placeholder="Enter label (number)")
         text_box_intolerance = widgets.Text(description="Intolerance:", placeholder="Enter label (number)")
@@ -128,13 +127,13 @@ def annotate_data(df, output_file, annotator):
 
         with out:
             clear_output(wait=True)
+            print(f"Annotator: {annotator}")
+            print(f"Image {idx+1}/{n_to_annotate} (ID: {row['id']})")
             try:
                 display_fixed_image(img_path, size=(512, 512))
             except FileNotFoundError:
                 next_image()
                 return
-            print(f"Annotator: {annotator}")
-            print(f"Image {idx+1}/{n_to_annotate} (ID: {row['id']})")
             display(widgets.HBox([text_box_incivility, text_box_intolerance, btn_next]))
 
     show_next()
