@@ -22,3 +22,10 @@ pandas = "^2.3.1"
 omegaconf = "^2.3.0"
 pillow = "^11.3.0"
 
+
+[tool.poetry.group.dev.dependencies]
+transformers = "4.52.4"
+unsloth = "2025.6.4"
+scikit-learn = "^1.7.1"
+wandb = "^0.21.3"
+
