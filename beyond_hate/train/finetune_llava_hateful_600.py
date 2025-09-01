@@ -16,7 +16,7 @@ from tqdm import tqdm
 import random
 import wandb
 
-from hate_meme.train.utils import binary_evaluation, extract_label, convert_to_conversation_inference, resize_and_pad, HateMemeDataset
+from beyond_hate.train.utils import binary_evaluation, extract_label, convert_to_conversation_inference, resize_and_pad, HateMemeDataset
 
 # %%
 # Load the configuration

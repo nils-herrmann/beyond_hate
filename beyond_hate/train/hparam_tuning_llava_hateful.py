@@ -14,7 +14,7 @@ from trl import SFTTrainer, SFTConfig
 from tqdm import tqdm
 import wandb
 
-from hate_meme.train.utils import extract_label, convert_to_conversation_inference, resize_and_pad, HateMemeDataset
+from beyond_hate.train.utils import extract_label, convert_to_conversation_inference, resize_and_pad, HateMemeDataset
 
 SYSTEM_TEXT = ("You are a content moderation assistant. Aid me to"
                 " label images with text as hateful or neutral."

@@ -1,1 +1,0 @@
-from hate_meme.data_processing.annotate import *

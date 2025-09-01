@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "hate_meme"
+name = "beyond_hate"
 version = "0.0.1"
 description = "Beyond Hate: Differentiating Uncivil and Intolerant Speech in Multimodal Content Moderation"
 authors = [
@@ -8,7 +8,7 @@ authors = [
 ]
 readme = "README.md"
 license = "MIT"
-packages = [{include = "hate_meme"}]
+packages = [{include = "beyond_hate"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"

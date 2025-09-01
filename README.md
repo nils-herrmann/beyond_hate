@@ -37,7 +37,7 @@ cd beyond_hate
 
 3.2 Execute the data download script:
    ```bash
-   poetry run python hate_meme/data_processing/download_hateful_meme_hf.py
+   poetry run python beyond_hate/data_processing/download_hateful_meme_hf.py
    ```
 
 
@@ -66,7 +66,7 @@ cd beyond_hate
 │       ├── test_unseen.jsonl
 │       └── img/           # Image files
 │
-├── hate_meme/             # Main package source code
+├── beyond_hate/             # Main package source code
 │   ├── __init__.py
 │   ├── analysis/          # Analysis and evaluation scripts
 │   │   └── bias_analysis.ipynb # False-positive, false-negative analysis

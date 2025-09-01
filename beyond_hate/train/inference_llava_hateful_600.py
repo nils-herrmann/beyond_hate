@@ -10,7 +10,7 @@ from omegaconf import OmegaConf
 from PIL import Image
 from tqdm.notebook import tqdm
 
-from hate_meme.train.utils import extract_label, convert_to_conversation_inference, resize_and_pad
+from beyond_hate.train.utils import extract_label, convert_to_conversation_inference, resize_and_pad
 
 # %%
 # Load the configuration

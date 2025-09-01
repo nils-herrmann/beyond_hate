@@ -16,7 +16,7 @@ from trl import SFTTrainer, SFTConfig
 from tqdm import tqdm
 import wandb
 
-from hate_meme.train.utils import binary_evaluation, convert_to_conversation_inference, extract_multi_labels, MultiVariableDataset, resize_and_pad
+from beyond_hate.train.utils import binary_evaluation, convert_to_conversation_inference, extract_multi_labels, MultiVariableDataset, resize_and_pad
 
 # System prompt for multi-variable classification
 SYSTEM_TEXT = ("You are a content moderation assistant. You need to classify images with text "

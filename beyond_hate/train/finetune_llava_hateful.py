@@ -47,7 +47,7 @@ USER_TEXT = (' Considering the image and its text: "{}".'
              ' Respond only with the word "Hateful" or "Neutral".')
 
 # %%
-from hate_meme.train.utils import HateMemeDataset
+from beyond_hate.train.utils import HateMemeDataset
 
 train_dataset = HateMemeDataset(train_data, SYSTEM_TEXT, USER_TEXT, hf_path,
                                 size=tuple(config.img_size or []), color_padding=tuple(config.img_color_padding or []))
@@ -107,7 +107,7 @@ trainer.train()
 
 # %%
 from PIL import Image
-from hate_meme.train.utils import extract_label, convert_to_conversation_inference, resize_and_pad
+from beyond_hate.train.utils import extract_label, convert_to_conversation_inference, resize_and_pad
 
 # Load hate meme dev set
 hf_path = cfg.data.paths.hf
