@@ -2,9 +2,11 @@ data:
   paths:
     base: "data"
     hf: "${data.paths.base}/hateful_memes_hf"
+    labels_file: "${data.paths.base}/labels.jsonl"
 out:
-  path: "$out"
-  runs: "$out/runs"
+  path: "out"
+  runs: "out/runs"
+
 training:
   # Pre-trained model
   model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
@@ -47,4 +49,4 @@ training:
 
 # Weights & Biases configuration
 wandb:
-  project: "hate-meme"
+  project: "beyond_hate"

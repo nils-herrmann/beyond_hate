@@ -1,0 +1,10 @@
+training:
+  num_train_epochs: 3
+
+runs:
+  - lora_r: 128
+    lora_alpha: 256
+    learning_rate: 4e-5
+    
+wandb:
+  project: "beyond_hate_coarse"
