@@ -5,6 +5,9 @@ runs:
   - lora_r: 128
     lora_alpha: 256
     learning_rate: 4e-5
-    
+
+evaluation:
+  checkpoint_path: "/workspace/disinfo/out/runs/250708-1815/checkpoint-844"
+  
 wandb:
   project: "beyond_hate_coarse"

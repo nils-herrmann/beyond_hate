@@ -25,5 +25,8 @@ runs:
     weight_decay: 0.1
     num_train_epochs: 2
 
+evaluation:
+  checkpoint_path: "/workspace/disinfo/out/runs/250718-1502/checkpoint-114"
+
 wandb:
   project: "beyond_hate_fine"
