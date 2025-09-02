@@ -40,6 +40,21 @@ cd beyond_hate
    poetry run python beyond_hate/data_processing/download_hateful_meme_hf.py
    ```
 
+### 4. Train LLaVA
+4.1 Set `WAND_API_KEY` in [.env](.env) file. You can get your key from [Weights & Biases](https://wandb.ai/authorize).
+
+4.2 Fine-tune LLaVA for single-label classification (coarse):
+   ```bash
+   poetry run python beyond_hate/train/train_coarse.py
+   ```
+
+4.3 Fine-tune LLaVA for multi-label classification (fine grained):
+   ```bash
+   poetry run python beyond_hate/train/train_fine.py
+   ```
+
+### 5. Evaluate model
+
 
 ## Repository Structure
 
