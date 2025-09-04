@@ -7,18 +7,43 @@ import ipywidgets as widgets
 from IPython.display import display, Image, clear_output
 from PIL import Image as PILImage
 
+
+INCIVILITY_CATEGORIES = {
+    0: "Civil",
+    1: "Vulgar/Profane",
+    2: "Attacks",
+    3: "Aspersions"
+}
+
+INTOLERANCE_CATEGORIES = {
+    0: "Tolerant",
+    1: "Threats to Rights",
+    2: "Political Intolerance",
+    3: "Racism",
+    4: "Social Intolerance",
+    5: "Gender/Sexual Intolerance",
+    6: "Religious Intolerance",
+    7: "Offensive Stereotypes",
+    8: "Violent Threats",
+    9: "Ableism"
+}
+
 def display_fixed_image(img_path, size=(300, 300), bg_color=(255, 255, 255)):
-    """Display a fixed-size image in a Jupyter notebook with a white background."""
+    """Display a fixed-size image in a Jupyter notebook with minimal padding."""
     with PILImage.open(img_path) as img:
         img = img.convert("RGB")
         img.thumbnail(size, PILImage.LANCZOS)
-        background = PILImage.new("RGB", size, bg_color)
-        offset = ((size[0] - img.width) // 2, (size[1] - img.height) // 2)
-        background.paste(img, offset)
+        
+        # Create background only as large as needed (with minimal padding)
+        padding = 10  # Small padding 
+        bg_size = (img.width + padding*2, img.height + padding*2)
+        background = PILImage.new("RGB", bg_size, bg_color)
+        background.paste(img, (padding, padding))
+        
         buf = io.BytesIO()
         background.save(buf, format='PNG')
         buf.seek(0)
-        display(Image(data=buf.read(), width=size[0], height=size[1]))
+        display(Image(data=buf.read(), width=bg_size[0], height=bg_size[1]))
 
 
 def load_existing_labels(output_file, annotator):
@@ -64,8 +89,8 @@ def annotate_data(df, output_file, annotator):
         entry = {
             "id": int(row['id']),
             "annotator": str(annotator),
-            "label_incivility": int(label_incivility),
-            "label_intolerance": int(label_intolerance),
+            "label_incivility": str(label_incivility) if label_incivility is not None else "",
+            "label_intolerance": str(label_intolerance) if label_intolerance is not None else "",
             "label_hateful": int(row['label']),
             "text": row['text'],
             "time": datetime.now().isoformat(),
@@ -85,8 +110,19 @@ def annotate_data(df, output_file, annotator):
         row = to_annotate.iloc[idx]
         img_path = row['img_path']
 
-        text_box_incivility = widgets.Text(description="Incivility:", placeholder="Enter label (number)")
-        text_box_intolerance = widgets.Text(description="Intolerance:", placeholder="Enter label (number)")
+        incivility_select = widgets.SelectMultiple(
+            options=[(f"{k}: {v}", k) for k, v in INCIVILITY_CATEGORIES.items()],
+            value=(),
+            description='Incivility',
+            disabled=False
+        )
+        intolerance_select = widgets.SelectMultiple(
+            options=[(f"{k}: {v}", k) for k, v in INTOLERANCE_CATEGORIES.items()],
+            value=(),
+            description='Intolerance',
+            rows=10,
+            disabled=False
+        )
         btn_next = widgets.Button(description="Next", button_style='success')
 
         # State to track if both categories are labeled
@@ -98,16 +134,18 @@ def annotate_data(df, output_file, annotator):
             )
 
         def on_incivility_change(change):
-            try:
-                state['incivility'] = int(change['new'])
-            except ValueError:
+            selected_values = change['new']
+            if selected_values:
+                state['incivility'] = ','.join(map(str, selected_values))
+            else:
                 state['incivility'] = None
             update_next_button()
 
         def on_intolerance_change(change):
-            try:
-                state['intolerance'] = int(change['new'])
-            except ValueError:
+            selected_values = change['new']
+            if selected_values:
+                state['intolerance'] = ','.join(map(str, selected_values))
+            else:
                 state['intolerance'] = None
             update_next_button()
 
@@ -120,21 +158,20 @@ def annotate_data(df, output_file, annotator):
             idx += 1
             show_next()
 
-        text_box_incivility.observe(on_incivility_change, names='value')
-        text_box_intolerance.observe(on_intolerance_change, names='value')
+        incivility_select.observe(on_incivility_change, names='value')
+        intolerance_select.observe(on_intolerance_change, names='value')
         btn_next.on_click(on_next_clicked)
         btn_next.disabled = True  # Initially disabled
 
         with out:
             clear_output(wait=True)
-            print(f"Annotator: {annotator}")
-            print(f"Image {idx+1}/{n_to_annotate} (ID: {row['id']})")
+            print(f"Annotator: {annotator} | Image {idx+1}/{n_to_annotate} | ID: {row['id']})")
             try:
                 display_fixed_image(img_path, size=(512, 512))
             except FileNotFoundError:
                 next_image()
                 return
-            display(widgets.HBox([text_box_incivility, text_box_intolerance, btn_next]))
+            display(widgets.HBox([incivility_select, intolerance_select, btn_next]))
 
     show_next()
     display(out)
