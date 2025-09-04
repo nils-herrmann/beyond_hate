@@ -65,3 +65,30 @@ cd beyond_hate
    ```bash
    poetry run python beyond_hate/eval/eval_fine.py
    ```
+
+## Repository Overview
+The repository is structured as follows:
+
+```
+beyond_hate/
+├── beyond_hate/                 # Main package directory
+│   ├── analysis/                # Analysis notebooks and scripts
+│   ├── data_processing/         # Data downloading, processing, and annotation tools
+│   ├── eval/                    # Model evaluation scripts
+│   └── train/                   # Model training scripts and utilities
+│
+├── config/                      # Configuration files for experiments
+│
+├── data/                        # Dataset storage directory
+│   ├── hateful_memes_hf/        # HuggingFace hateful memes dataset
+│   ├── labels.jsonl             # Annotation labels
+│   └── images_to_annotate.txt   # List of images for annotation
+│
+├── scripts/                     # Automation and experiment scripts
+│
+├── BeyondHate.pdf               # Research paper
+├── README.md                    # Project documentation
+├── pyproject.toml               # Poetry project configuration
+├── poetry.lock                  # Poetry dependency lock file
+└── runpod_setup.sh              # RunPod environment setup script
+```
