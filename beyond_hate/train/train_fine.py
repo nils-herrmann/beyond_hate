@@ -48,11 +48,19 @@ def main():
         data = [json.loads(line) for line in f]
     ## Get relative paths for images
     data = [{**item, 'img': '/'.join(item['img'].split('/')[-2:])} for item in data]
-    ## Binarize labels
-    data = [{**item,
-            'label_incivility': 1 if item['label_incivility'] > 0 else 0,
-            'label_intolerance': 1 if item['label_incivility'] > 0 else 0}
-            for item in data]
+    def to_int(x):
+       try:
+           return int(x)
+       except:
+           return 0
+
+    data = [{
+    **item,
+    'label_incivility': 1 if to_int(item['label_incivility']) > 0 else 0,
+    'label_intolerance': 1 if to_int(item['label_intolerance']) > 0 else 0,
+} for item in data]
+
+   
     ## Just keep items with valid image paths
     data = [item for item in data if os.path.exists(hf_path / item['img'])]
 

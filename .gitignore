@@ -182,3 +182,6 @@ wandb/
 setup.sh
 out/predictions/
 beyond_hate/train_old/
+hf_home/
+**/hf_home/
+

@@ -46,8 +46,8 @@ def main():
     
     # Binarize labels
     data = [{**item,
-             'label_incivility': 1 if item['label_incivility'] > 0 else 0,
-             'label_intolerance': 1 if item['label_intolerance'] > 0 else 0}
+             'label_incivility': 1 if int(item['label_incivility']) > 0 else 0,
+             'label_intolerance': 1 if int(item['label_intolerance']) > 0 else 0}
              for item in data]
     
     # Just keep items with valid image paths
@@ -64,11 +64,11 @@ def main():
         stratify=[item['label_hateful'] for item in data]
     )
     
-    print(f"Loaded {len(test_data)} test samples")
+    #print(f"Loaded {len(test_data)} test samples")
     
     # Load the fine-tuned model
     checkpoint_path = project_root / cfg.evaluation.checkpoint_path
-    print(f"Loading model from: {checkpoint_path}")
+    #print(f"Loading model from: {checkpoint_path}")
     
     model, tokenizer = FastVisionModel.from_pretrained(
         str(checkpoint_path),
