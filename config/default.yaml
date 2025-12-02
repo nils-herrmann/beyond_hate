@@ -3,9 +3,12 @@ data:
     base: "data"
     hf: "${data.paths.base}/hateful_memes_hf"
     labels_file: "${data.paths.base}/labels.jsonl"
+  final_dataset: "nils-herrmann/hateful_memes_multilabel"
 out:
   path: "out"
   runs: "out/runs"
+  results: "out/results"
+  logs: "logs"
 
 training:
   # Pre-trained model
