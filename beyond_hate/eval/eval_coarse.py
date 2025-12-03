@@ -2,15 +2,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from unsloth import FastVisionModel
-import json
-import os
+from datasets import load_dataset
 from omegaconf import OmegaConf
 from pathlib import Path
-from PIL import Image
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import wandb
 
-from beyond_hate.train.utils import binary_evaluation, extract_label, convert_to_conversation_inference, resize_and_pad
+from beyond_hate.train.utils import binary_evaluation, extract_label, to_inference_conversation
 from beyond_hate.train.prompts import coarse_prompt
 
 def main():
@@ -28,12 +26,7 @@ def main():
     cfg = OmegaConf.merge(cfg, custom_cfg)
     
     # Load the test data
-    hf_path = project_root / cfg.data.paths.hf
-    with open(hf_path / 'test_seen.jsonl', 'r') as f:
-        test_data = [json.loads(line) for line in f]
-    
-    # Just keep items with valid image paths
-    test_data = [item for item in test_data if os.path.exists(f"{hf_path}/{item['img']}")]
+    test_ds = load_dataset(cfg.data.final_dataset, split='test')
     
     # Load prompts
     SYSTEM_TEXT = coarse_prompt['system']
@@ -60,24 +53,15 @@ def main():
         config=OmegaConf.to_container(cfg)
     )
     
+    # Prepare test dataset
+    test_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT, 
+                                                         img_size=tuple(cfg.training.img_size), 
+                                                         img_color_padding=tuple(cfg.training.img_color_padding))
+                              for d in tqdm(test_ds)]
+    
     # Run inference on test data
     results = []
-    for sample in tqdm(test_data):
-        label = sample['label']
-        text = sample['text']
-        
-        # Resize and pad the image if specified in the config
-        if cfg.training.img_size:
-            image = resize_and_pad(
-                Image.open(hf_path / sample['img']), 
-                target_size=tuple(cfg.training.img_size), 
-                color=tuple(cfg.training.img_color_padding)
-            )
-        else:
-            image = Image.open(hf_path / sample['img'])
-        
-        conversation = convert_to_conversation_inference(text, SYSTEM_TEXT, USER_TEXT)
-        
+    for conversation, image, data_id, labels in tqdm(test_dataset_converted):
         prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
         inputs = tokenizer(images=image, text=prompt, return_tensors="pt").to("cuda:0")
         
@@ -88,9 +72,8 @@ def main():
         output = output.split('[/INST]')[-1].strip()
         
         results.append({
-            'id': sample['id'],
-            'label': label,
-            'text': text,
+            'id': data_id,
+            'label': labels['label_hateful'],
             'output': output,
         })
     

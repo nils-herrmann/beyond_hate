@@ -5,17 +5,17 @@ load_dotenv()
 from unsloth import is_bf16_supported, FastVisionModel
 from unsloth.trainer import UnslothVisionDataCollator
 
-import json
-import os
-from omegaconf import OmegaConf
-from pathlib import Path
-from PIL import Image
 import time
-from trl import SFTTrainer, SFTConfig
-from tqdm import tqdm
 import wandb
 
-from beyond_hate.train.utils import binary_evaluation, extract_label, convert_to_conversation_inference, resize_and_pad, HateMemeDataset
+from datasets import load_dataset
+from omegaconf import OmegaConf
+from pathlib import Path
+from trl import SFTTrainer, SFTConfig
+from tqdm.auto import tqdm
+
+
+from beyond_hate.train.utils import binary_evaluation, extract_label, to_train_conversation, to_inference_conversation
 from beyond_hate.train.prompts import coarse_prompt
 
 
@@ -34,20 +34,8 @@ def main():
     cfg = OmegaConf.merge(cfg, custom_cfg)
 
     # Load the data
-    # Load hate meme train set
-    hf_path = project_root / cfg.data.paths.hf
-    with open(hf_path / 'train.jsonl', 'r') as f:
-        train_data = [json.loads(line) for line in f]
-    # Just keep items with valid image paths
-    train_data = [item for item in train_data if os.path.exists(f"{hf_path}/{item['img']}")]
-
-    # Load hate meme dev set
-    hf_path = project_root / cfg.data.paths.hf
-    with open(hf_path / 'dev_seen.jsonl', 'r') as f:
-        val_data = [json.loads(line) for line in f]
-
-    # Just keep items with valid image paths
-    val_data = [item for item in val_data if os.path.exists(f"{hf_path}/{item['img']}")]
+    train_ds = load_dataset(cfg.data.final_dataset, split='train')
+    val_ds = load_dataset(cfg.data.final_dataset, split='validation')
 
     # Load prompts
     SYSTEM_TEXT = coarse_prompt['system']
@@ -67,8 +55,8 @@ def main():
             config[h_param] = value
 
         # Prepare the dataset
-        train_dataset = HateMemeDataset(train_data, SYSTEM_TEXT, USER_TEXT, hf_path,
-                                        size=tuple(config.img_size or []), color_padding=tuple(config.img_color_padding or []))
+        train_dataset_converted = [to_train_conversation(d, SYSTEM_TEXT, USER_TEXT, img_size=tuple(cfg.training.img_size), img_color_padding=tuple(cfg.training.img_color_padding))
+                                   for d in tqdm(train_ds)]
 
         # Load the model and tokenizer
         model, tokenizer = FastVisionModel.from_pretrained(
@@ -97,7 +85,7 @@ def main():
             model = model,
             tokenizer = tokenizer,
             data_collator = UnslothVisionDataCollator(model, tokenizer),
-            train_dataset = train_dataset,
+            train_dataset = train_dataset_converted,
             args = SFTConfig(
                 per_device_train_batch_size = config.per_device_train_batch_size,
                 gradient_accumulation_steps = config.gradient_accumulation_steps,
@@ -128,21 +116,13 @@ def main():
         )
         trainer.train()
 
-        
+        # Evaluate the model
         FastVisionModel.for_inference(model)
+        val_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT)
+                                 for d in tqdm(val_ds)]
 
         results = []
-        for sample in tqdm(val_data):
-            label = sample['label']
-            text = sample['text']
-            
-            # Resize and pad the image if specified in the config
-            if config.img_size:
-                image = resize_and_pad(Image.open(hf_path / sample['img']), target_size=tuple(config.img_size), color=tuple(config.img_color_padding))
-            else:
-                image = Image.open(hf_path / sample['img'])
-            
-            conversation = convert_to_conversation_inference(text, SYSTEM_TEXT, USER_TEXT)
+        for conversation, image, data_id, labels in tqdm(val_dataset_converted):
 
             prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
             inputs = tokenizer(images=image, text=prompt, return_tensors="pt").to("cuda:0")
@@ -155,8 +135,8 @@ def main():
 
             results.append(
                 {
-                    'id': sample['id'],
-                    'label': label,
+                    'id': data_id,
+                    'label': labels['label_hateful'],
                     'output': output,
                 }
             )

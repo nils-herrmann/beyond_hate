@@ -4,20 +4,17 @@ load_dotenv()
 from unsloth import is_bf16_supported, FastVisionModel
 from unsloth.trainer import UnslothVisionDataCollator
 
-import json
-import os
-import random
 import time
-
-from omegaconf import OmegaConf
-from pathlib import Path
-from PIL import Image
-from sklearn.model_selection import train_test_split
-from trl import SFTTrainer, SFTConfig
-from tqdm import tqdm
 import wandb
 
-from beyond_hate.train.utils import binary_evaluation, convert_to_conversation_inference, extract_multi_labels, MultiVariableDataset, resize_and_pad
+from datasets import load_dataset
+from omegaconf import OmegaConf
+from pathlib import Path
+from trl import SFTTrainer, SFTConfig
+from tqdm.auto import tqdm
+
+
+from beyond_hate.train.utils import binary_evaluation, extract_multi_labels, to_inference_conversation ,to_train_conversation_multilabel
 from beyond_hate.train.prompts import fine_prompt
 
 def main():
@@ -37,47 +34,14 @@ def main():
 
     # Data paths
     hf_path = project_root / cfg.data.paths.hf
-    labels_file = project_root / cfg.data.paths.labels_file
 
     # Define system and user text from prompts
     SYSTEM_TEXT = fine_prompt['system']
     USER_TEXT = fine_prompt['user']
 
-    # Load labeled data
-    with open(labels_file, 'r') as f:
-        data = [json.loads(line) for line in f]
-    ## Get relative paths for images
-    data = [{**item, 'img': '/'.join(item['img'].split('/')[-2:])} for item in data]
-    ## Binarize labels
-    data = [{**item,
-            'label_incivility': 1 if item['label_incivility'] > 0 else 0,
-            'label_intolerance': 1 if item['label_incivility'] > 0 else 0}
-            for item in data]
-    ## Just keep items with valid image paths
-    data = [item for item in data if os.path.exists(hf_path / item['img'])]
-
-    ## Set random seed for reproducibility
-    random.seed(config.seed)
-
-    # First split: 85% train+val, 15% test
-    train_val_data, test_data = train_test_split(
-        data, 
-        test_size=0.1, 
-        random_state=config.seed, 
-        stratify=[item['label_hateful'] for item in data]  # Stratify by incivility
-    )
-
-    # Second split: 85% train, 15% val from the train_val_data
-    train_data, val_data = train_test_split(
-        train_val_data, 
-        test_size=0.176,  # 0.176 * 0.85 = 0.15 of total data
-        random_state=config.seed,
-        stratify=[item['label_hateful'] for item in train_val_data]
-    )
-
-    # Split the data into training and validation sets
-    train_dataset = MultiVariableDataset(train_data, SYSTEM_TEXT, USER_TEXT, hf_path,
-                                        size=tuple(config.img_size or []), color_padding=tuple(config.img_color_padding or []))
+    # Load the data
+    train_ds = load_dataset(cfg.data.final_dataset, split='train')
+    val_ds = load_dataset(cfg.data.final_dataset, split='validation')
 
     #%% Load the runs configuration
     runs = OmegaConf.to_container(cfg.runs)
@@ -89,6 +53,10 @@ def main():
         ## Update the configuration with the current run parameters
         for h_param, value in run.items():
             config[h_param] = value
+
+        # Get data
+        train_multilabel_converted = [to_train_conversation_multilabel(d, SYSTEM_TEXT, USER_TEXT, img_size=tuple(cfg.training.img_size), img_color_padding=tuple(cfg.training.img_color_padding))
+                                      for d in tqdm(train_ds)]
 
         # Load the model and tokenizer
         model, tokenizer = FastVisionModel.from_pretrained(
@@ -117,13 +85,13 @@ def main():
             model = model,
             tokenizer = tokenizer,
             data_collator = UnslothVisionDataCollator(model, tokenizer),
-            train_dataset = train_dataset,
+            train_dataset = train_multilabel_converted,
             args = SFTConfig(
                 per_device_train_batch_size = config.per_device_train_batch_size,
                 gradient_accumulation_steps = config.gradient_accumulation_steps,
                 warmup_steps = config.warmup_steps,
-                #num_train_epochs = config.num_train_epochs,
-                max_steps = 10,
+                num_train_epochs = config.num_train_epochs,
+                #max_steps = 10,
                 learning_rate = config.learning_rate,
                 fp16 = not is_bf16_supported(),
                 bf16 = is_bf16_supported(),
@@ -152,18 +120,12 @@ def main():
         # Inference
         FastVisionModel.for_inference(model)
 
+        val_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT)
+                                 for d in tqdm(val_ds)]
+
         results = []
-        val_data = val_data[:30]
-        for sample in tqdm(val_data):
-            label_intolerance = sample['label_intolerance']
-            label_incivil = sample['label_incivility']
-            label_hateful = sample['label_hateful']
-            text = sample['text']
-            
-            # Resize and pad the image if specified in the config
-            image = resize_and_pad(Image.open(hf_path/sample['img']), target_size=tuple(config.img_size), color=(255, 255, 255))
-            
-            conversation = convert_to_conversation_inference(text, SYSTEM_TEXT, USER_TEXT)
+        for conversation, image, data_id, labels in tqdm(val_dataset_converted):
+
             prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
             inputs = tokenizer(images=image, text=prompt, return_tensors="pt").to("cuda:0")
 
@@ -175,10 +137,10 @@ def main():
 
             results.append(
                 {
-                    'id': sample['id'],
-                    'label_intolerance': label_intolerance,
-                    'label_incivility': label_incivil,
-                    'label_hateful': label_hateful,
+                    'id': data_id,
+                    'label_intolerance': labels['label_intolerance'],
+                    'label_incivility': labels['label_incivility'],
+                    'label_hateful': labels['label_hateful'],
                     'output': output,
                 }
             )

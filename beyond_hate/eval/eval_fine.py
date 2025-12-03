@@ -2,17 +2,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from unsloth import FastVisionModel
-import json
-import os
-import random
+from datasets import load_dataset
 from omegaconf import OmegaConf
 from pathlib import Path
-from PIL import Image
-from sklearn.model_selection import train_test_split
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import wandb
 
-from beyond_hate.train.utils import binary_evaluation, convert_to_conversation_inference, extract_multi_labels, resize_and_pad
+from beyond_hate.train.utils import binary_evaluation, extract_multi_labels, to_inference_conversation
 from beyond_hate.train.prompts import fine_prompt
 
 def main():
@@ -29,42 +25,14 @@ def main():
     # Override default config with custom config
     cfg = OmegaConf.merge(cfg, custom_cfg)
     
-    # Data paths
-    hf_path = project_root / cfg.data.paths.hf
-    labels_file = project_root / cfg.data.paths.labels_file
-    
     # Define system and user text from prompts
     SYSTEM_TEXT = fine_prompt['system']
     USER_TEXT = fine_prompt['user']
     
-    # Load labeled data
-    with open(labels_file, 'r') as f:
-        data = [json.loads(line) for line in f]
+    # Load the test data
+    test_ds = load_dataset(cfg.data.final_dataset, split='test')
     
-    # Get relative paths for images
-    data = [{**item, 'img': '/'.join(item['img'].split('/')[-2:])} for item in data]
-    
-    # Binarize labels
-    data = [{**item,
-             'label_incivility': 1 if item['label_incivility'] > 0 else 0,
-             'label_intolerance': 1 if item['label_intolerance'] > 0 else 0}
-             for item in data]
-    
-    # Just keep items with valid image paths
-    data = [item for item in data if os.path.exists(hf_path / item['img'])]
-    
-    # Set random seed for reproducibility
-    random.seed(cfg.training.seed)
-    
-    # First split: 85% train+val, 15% test
-    train_val_data, test_data = train_test_split(
-        data, 
-        test_size=0.1, 
-        random_state=cfg.training.seed, 
-        stratify=[item['label_hateful'] for item in data]
-    )
-    
-    print(f"Loaded {len(test_data)} test samples")
+    print(f"Loaded {len(test_ds)} test samples")
     
     # Load the fine-tuned model
     checkpoint_path = project_root / cfg.evaluation.checkpoint_path
@@ -88,28 +56,17 @@ def main():
         config=OmegaConf.to_container(cfg)
     )
     
+    # Prepare test dataset
+    test_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT,
+                                                         img_size=tuple(cfg.training.img_size),
+                                                         img_color_padding=tuple(cfg.training.img_color_padding))
+                              for d in tqdm(test_ds)]
+    
     # Run inference on test data
     results = []
     print("Running inference on test data...")
     
-    for sample in tqdm(test_data):
-        label_intolerance = sample['label_intolerance']
-        label_incivility = sample['label_incivility']
-        label_hateful = sample['label_hateful']
-        text = sample['text']
-        
-        # Resize and pad the image if specified in the config
-        if cfg.training.img_size:
-            image = resize_and_pad(
-                Image.open(hf_path / sample['img']), 
-                target_size=tuple(cfg.training.img_size), 
-                color=tuple(cfg.training.img_color_padding)
-            )
-        else:
-            image = Image.open(hf_path / sample['img'])
-        
-        conversation = convert_to_conversation_inference(text, SYSTEM_TEXT, USER_TEXT)
-        
+    for conversation, image, data_id, labels in tqdm(test_dataset_converted):
         prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
         inputs = tokenizer(images=image, text=prompt, return_tensors="pt").to("cuda:0")
         
@@ -120,11 +77,10 @@ def main():
         output = output.split('[/INST]')[-1].strip()
         
         results.append({
-            'id': sample['id'],
-            'label_intolerance': label_intolerance,
-            'label_incivility': label_incivility,
-            'label_hateful': label_hateful,
-            'text': text,
+            'id': data_id,
+            'label_intolerance': labels['label_intolerance'],
+            'label_incivility': labels['label_incivility'],
+            'label_hateful': labels['label_hateful'],
             'output': output,
         })
     

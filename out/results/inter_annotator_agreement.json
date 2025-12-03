@@ -1,20 +1,20 @@
 {
   "label_hateful": {
-    "average_agreement": 0.998,
-    "std_agreement": 0.0,
-    "average_kappa": 0.996,
-    "std_kappa": 0.0
+    "average_agreement": 0.999,
+    "std_agreement": 0.001,
+    "average_kappa": 0.997,
+    "std_kappa": 0.002
   },
   "label_incivility": {
-    "average_agreement": 0.704,
-    "std_agreement": 0.0,
-    "average_kappa": 0.35,
-    "std_kappa": 0.0
+    "average_agreement": 0.803,
+    "std_agreement": 0.14,
+    "average_kappa": 0.566,
+    "std_kappa": 0.307
   },
   "label_intolerance": {
-    "average_agreement": 0.636,
-    "std_agreement": 0.0,
-    "average_kappa": 0.339,
-    "std_kappa": 0.0
+    "average_agreement": 0.757,
+    "std_agreement": 0.172,
+    "average_kappa": 0.559,
+    "std_kappa": 0.312
   }
 }

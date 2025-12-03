@@ -117,7 +117,7 @@ def aggregate_annotations(annotations):
     """Aggregate annotations using majority voting."""
     logger.info("Aggregating annotations via majority voting...")
 
-    annotations_agg = annotations.groupby("id").agg({
+    annotations_agg = annotations.groupby(["id", "text"]).agg({
         "label_hateful": "mean",
         "label_incivility_bin": "mean",
         "label_intolerance_bin": "mean"
@@ -150,7 +150,7 @@ def map_splits_and_images(annotations_agg, hf_data_path):
         logger.warning(f"There are {missing_splits} annotations with missing splits and {missing_img} with missing images")
 
     # Keep only relevant columns
-    annotations_agg = annotations_agg[["id", "img", "split", "label_hateful", "label_incivility", "label_intolerance"]]
+    annotations_agg = annotations_agg[["id", "text" ,"img", "split", "label_hateful", "label_incivility", "label_intolerance"]]
 
     logger.info(f"Mapped splits for {len(annotations_agg)} annotations")
     return annotations_agg
