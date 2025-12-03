@@ -16,6 +16,7 @@ from tqdm.auto import tqdm
 
 from beyond_hate.train.utils import binary_evaluation, extract_multi_labels, to_inference_conversation ,to_train_conversation_multilabel
 from beyond_hate.train.prompts import fine_prompt
+from beyond_hate.logger import get_logger
 
 def main():
     # Config paths
@@ -32,6 +33,12 @@ def main():
     cfg = OmegaConf.merge(cfg, custom_cfg)
     config = cfg.training
 
+    # Load logger
+    logs_dir = project_root / cfg.out.logs
+    logger = get_logger("train_fine", logs_dir=logs_dir)
+
+    logger.info("Starting fine-grained training...")
+
     # Data paths
     hf_path = project_root / cfg.data.paths.hf
 
@@ -40,11 +47,14 @@ def main():
     USER_TEXT = fine_prompt['user']
 
     # Load the data
+    logger.info(f"Loading dataset: {cfg.data.final_dataset}")
     train_ds = load_dataset(cfg.data.final_dataset, split='train')
     val_ds = load_dataset(cfg.data.final_dataset, split='validation')
+    logger.info(f"Loaded {len(train_ds)} train samples and {len(val_ds)} validation samples")
 
     #%% Load the runs configuration
     runs = OmegaConf.to_container(cfg.runs)
+    logger.info(f"Running {len(runs)} training configuration(s)")
 
     for run in tqdm(runs):
         ## Merge configurations and set the training configuration
@@ -53,12 +63,15 @@ def main():
         ## Update the configuration with the current run parameters
         for h_param, value in run.items():
             config[h_param] = value
+            logger.info(f"  {h_param}: {value}")
 
         # Get data
+        logger.info("Preparing training dataset...")
         train_multilabel_converted = [to_train_conversation_multilabel(d, SYSTEM_TEXT, USER_TEXT, img_size=tuple(cfg.training.img_size), img_color_padding=tuple(cfg.training.img_color_padding))
                                       for d in tqdm(train_ds)]
 
         # Load the model and tokenizer
+        logger.info(f"Loading model: {config.model}")
         model, tokenizer = FastVisionModel.from_pretrained(
             config.model,
             load_in_4bit = config.load_in_4bit,
@@ -76,9 +89,11 @@ def main():
         # WandB setup
         current_time = time.strftime("%y%m%d-%H%M")
         output_dir = project_root / cfg.out.runs / current_time
+        logger.info(f"Initializing WandB run: {current_time}")
         wandb.init(project=cfg.wandb.project, name=current_time, dir=project_root / cfg.out.path, config=dict(config))
 
         # Train the model
+        logger.info("Starting training...")
         FastVisionModel.for_training(model)
 
         trainer = SFTTrainer(
@@ -116,8 +131,10 @@ def main():
             )
         )
         trainer.train()
+        logger.info("Training completed!")
 
         # Inference
+        logger.info("Starting evaluation on validation set...")
         FastVisionModel.for_inference(model)
 
         val_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT)
@@ -162,6 +179,9 @@ def main():
         y_true_intolerance_valid = [y_true_intolerance[i] for i in valid_intolerance]
         y_pred_intolerance_valid = [y_pred_intolerance[i] for i in valid_intolerance]
 
+        logger.info(f"Valid incivility predictions: {len(y_true_incivil_valid)}/{len(y_true_incivil)} ({len(y_true_incivil_valid)/len(y_true_incivil)*100:.1f}%)")
+        logger.info(f"Valid intolerance predictions: {len(y_true_intolerance_valid)}/{len(y_true_intolerance)} ({len(y_true_intolerance_valid)/len(y_true_intolerance)*100:.1f}%)")
+
         # Evaluate the predictions
         evaluation_incivil = binary_evaluation(y_true_incivil, y_pred_incivil)
         evaluation_intolerance = binary_evaluation(y_true_intolerance, y_pred_intolerance)
@@ -170,6 +190,12 @@ def main():
         avg_accuracy = (evaluation_incivil['accuracy'] + evaluation_intolerance['accuracy']) / 2
         avg_f1 = (evaluation_incivil['f1_score'] + evaluation_intolerance['f1_score']) / 2
         avg_invalid_prediction_rate = (evaluation_incivil['invalid_prediction_rate'] + evaluation_intolerance['invalid_prediction_rate']) / 2
+        
+        logger.info("Validation Results:")
+        logger.info(f"  Average Accuracy: {avg_accuracy:.4f}")
+        logger.info(f"  Average F1: {avg_f1:.4f}")
+        logger.info(f"  Incivility - Accuracy: {evaluation_incivil['accuracy']:.4f}, F1: {evaluation_incivil['f1_score']:.4f}")
+        logger.info(f"  Intolerance - Accuracy: {evaluation_intolerance['accuracy']:.4f}, F1: {evaluation_intolerance['f1_score']:.4f}")
 
         wandb.log({
             'val/accuracy': avg_accuracy,
@@ -201,6 +227,7 @@ def main():
             )
         })
 
+        logger.info(f"Run {run_idx} completed!\n")
         wandb.finish()
 
 if __name__ == "__main__":

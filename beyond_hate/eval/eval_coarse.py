@@ -10,6 +10,7 @@ import wandb
 
 from beyond_hate.train.utils import binary_evaluation, extract_label, to_inference_conversation
 from beyond_hate.train.prompts import coarse_prompt
+from beyond_hate.logger import get_logger
 
 def main():
     # Config paths
@@ -25,8 +26,16 @@ def main():
     # Override default config with custom config
     cfg = OmegaConf.merge(cfg, custom_cfg)
     
+    # Load logger
+    logs_dir = project_root / cfg.out.logs
+    logger = get_logger("eval_coarse", logs_dir=logs_dir)
+    
+    logger.info("Starting coarse-grained evaluation...")
+    
     # Load the test data
+    logger.info(f"Loading dataset: {cfg.data.final_dataset}")
     test_ds = load_dataset(cfg.data.final_dataset, split='test')
+    logger.info(f"Loaded {len(test_ds)} test samples")
     
     # Load prompts
     SYSTEM_TEXT = coarse_prompt['system']
@@ -34,6 +43,7 @@ def main():
     
     # Load the fine-tuned model
     checkpoint_path = project_root / cfg.evaluation.checkpoint_path
+    logger.info(f"Loading model from: {checkpoint_path}")
     
     model, tokenizer = FastVisionModel.from_pretrained(
         str(checkpoint_path),
@@ -46,20 +56,24 @@ def main():
     FastVisionModel.for_inference(model)
     
     # Initialize WandB for logging evaluation results
+    run_name = f"eval_{checkpoint_path.parent.name}"
+    logger.info(f"Initializing WandB run: {run_name}")
     wandb.init(
         project=cfg.wandb.project, 
-        name=f"eval_{checkpoint_path.parent.name}",
+        name=run_name,
         dir=project_root / cfg.out.path,
         config=OmegaConf.to_container(cfg)
     )
     
     # Prepare test dataset
+    logger.info("Preparing test dataset...")
     test_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT, 
                                                          img_size=tuple(cfg.training.img_size), 
                                                          img_color_padding=tuple(cfg.training.img_color_padding))
                               for d in tqdm(test_ds)]
     
     # Run inference on test data
+    logger.info("Running inference on test data...")
     results = []
     for conversation, image, data_id, labels in tqdm(test_dataset_converted):
         prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
@@ -88,10 +102,17 @@ def main():
     y_true_valid = [y_true[i] for i in valid]
     y_pred_valid = [y_pred[i] for i in valid]
     
-    print(f"Valid predictions: {len(y_true_valid)}/{len(y_true)} ({len(y_true_valid)/len(y_true)*100:.1f}%)")
+    logger.info(f"Valid predictions: {len(y_true_valid)}/{len(y_true)} ({len(y_true_valid)/len(y_true)*100:.1f}%)")
     
     # Evaluate
     evaluation = binary_evaluation(y_true, y_pred)
+    
+    logger.info("Evaluation Results:")
+    logger.info(f"  Accuracy: {evaluation['accuracy']:.4f}")
+    logger.info(f"  Precision: {evaluation['precision']:.4f}")
+    logger.info(f"  Recall: {evaluation['recall']:.4f}")
+    logger.info(f"  F1 Score: {evaluation['f1_score']:.4f}")
+    logger.info(f"  Invalid Prediction Rate: {evaluation['invalid_prediction_rate']:.4f}")
         
     # Log confusion matrix to wandb
     wandb.log({"eval/confusion_matrix": wandb.plot.confusion_matrix(
@@ -113,6 +134,7 @@ def main():
     })
     
     # Finish wandb run
+    logger.info("Evaluation complete!")
     wandb.finish()
 
 if __name__ == "__main__":
