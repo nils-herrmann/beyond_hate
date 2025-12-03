@@ -16,7 +16,7 @@ gpt:
 
 training:
   # Pre-trained model
-  model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
+  model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit" #unsloth/Qwen2.5-VL-7B-Instruct-unsloth-bnb-4bit
   load_in_4bit: true
   use_gradient_checkpointing: "unsloth"
   max_seq_length: 2048
