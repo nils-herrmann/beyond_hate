@@ -97,13 +97,6 @@ def main():
     y_true = [r['label'] for r in results]
     y_pred = [extract_label(r['output'], possible_labels) for r in results]
     
-    # Get valid predictions only
-    valid = [i for i, pred in enumerate(y_pred) if pred != -1]
-    y_true_valid = [y_true[i] for i in valid]
-    y_pred_valid = [y_pred[i] for i in valid]
-    
-    logger.info(f"Valid predictions: {len(y_true_valid)}/{len(y_true)} ({len(y_true_valid)/len(y_true)*100:.1f}%)")
-    
     # Evaluate
     evaluation = binary_evaluation(y_true, y_pred)
     
@@ -115,6 +108,12 @@ def main():
     logger.info(f"  Invalid Prediction Rate: {evaluation['invalid_prediction_rate']:.4f}")
         
     # Log confusion matrix to wandb
+    valid = [i for i, pred in enumerate(y_pred) if pred != -1]
+    y_true_valid = [y_true[i] for i in valid]
+    y_pred_valid = [y_pred[i] for i in valid]
+    
+    logger.info(f"Valid predictions: {len(y_true_valid)}/{len(y_true)} ({len(y_true_valid)/len(y_true)*100:.1f}%)")
+
     wandb.log({"eval/confusion_matrix": wandb.plot.confusion_matrix(
         probs=None,
         y_true=y_true_valid,

@@ -1,5 +1,5 @@
 #!/bin/bash
 set -e
 
-# Activate poetry environment and run the script
-poetry run python ../../beyond_hate/train/train_fine.py
+# Run fine-grained training
+poetry run python -m beyond_hate.train.train_fine

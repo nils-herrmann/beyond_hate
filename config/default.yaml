@@ -10,6 +10,10 @@ out:
   results: "out/results"
   logs: "logs"
 
+gpt:
+  model: "gpt-5-nano"
+  concurrent_requests: 105
+
 training:
   # Pre-trained model
   model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"

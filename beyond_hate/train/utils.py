@@ -139,7 +139,6 @@ def to_inference_conversation(sample, system_text, uster_text, img_size=(512, 51
     return conversation, image, data_id, labels
 
 
-
 def extract_label(text: str, labels: dict):
     """Extract predicted label from model output text.
     
@@ -182,75 +181,6 @@ def resize_and_pad(image, target_size=(256, 256), color=(255, 255, 255)):
     padded_image = ImageOps.expand(image, padding, fill=color)
     return padded_image
 
-
-class MultiVariableDataset(Dataset):
-    """Dataset for multi-label classification with incivility and intolerance labels.
-    
-    Args:
-        data: List of data samples
-        system_text: System prompt text
-        user_text: User prompt template
-        image_base_path: Base directory path for images
-        size: Target image size as (width, height)
-        color_padding: RGB color for padding as (R, G, B)
-    """
-    def __init__(self, data, system_text, user_text, image_base_path, size=(256, 266), color_padding=(255, 255, 255)):
-        self.data = data
-        self.system_text = system_text
-        self.user_text = user_text
-        self.image_base_path = image_base_path
-        self.size = size
-        self.color_padding = color_padding
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        sample = self.data[idx]
-        sample = sample.copy()
-        sample['img'] = os.path.join(self.image_base_path, sample['img'])
-        image = Image.open(sample['img'])
-        if self.size:
-            image = resize_and_pad(image, target_size=self.size, color=self.color_padding)
-        
-        return self.convert_to_conversation_train(sample, image)
-
-    def convert_to_conversation_train(self, sample, image):
-        """Convert sample to conversation format for training.
-        
-        Args:
-            sample: Data sample with label fields
-            image: Processed PIL Image
-        
-        Returns:
-            Dictionary with 'messages' key containing conversation structure
-        """
-        # Assuming your data has labels like 'label_incivility' and 'label_intolerance'
-        incivility_label = 'Uncivil' if sample.get('label_incivility', 0) == 1 else 'Civil'
-        intolerance_label = 'Intolerant' if sample.get('label_intolerance', 0) == 1 else 'Tolerant'
-        
-        meme_text = sample['text']
-        response = f"Incivility: {incivility_label}, Intolerance: {intolerance_label}"
-
-        conversation = [
-            {
-                "role": "system",
-                "content": [{"type": "text", "text": self.system_text}]
-            },
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": image},
-                    {"type": "text", "text": self.user_text.format(meme_text)}
-                ],
-            },
-            {
-                "role": "assistant",
-                "content": [{"type": "text", "text": response}]
-            },
-        ]
-        return {"messages": conversation}
-
 def extract_multi_labels(text: str):
     """Extract both incivility and intolerance labels from model output.
     
@@ -283,7 +213,7 @@ def binary_evaluation(y_true, y_pred):
     
     Args:
         y_true: List of true labels
-        y_pred: List of predicted labels (may contain -1 for invalid predictions)
+        y_pred: List of predicted labels
     
     Returns:
         Dictionary with metrics: invalid_prediction_rate, accuracy, precision, recall, f1_score, confusion_matrix
@@ -293,7 +223,7 @@ def binary_evaluation(y_true, y_pred):
     y_pred_valid = [y_pred[i] for i in valid]
 
     return {
-        'invalid_prediction_rate': (len(y_pred) - len(y_true_valid)) / len(y_pred),
+        'invalid_prediction_rate': (len(y_pred) - len(y_pred_valid)) / len(y_pred),
         'accuracy': accuracy_score(y_true_valid, y_pred_valid),
         'precision': precision_score(y_true_valid, y_pred_valid, average='weighted'),
         'recall': recall_score(y_true_valid, y_pred_valid, average='weighted'),
