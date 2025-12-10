@@ -5,18 +5,19 @@ load_dotenv()
 from unsloth import is_bf16_supported, FastVisionModel
 from unsloth.trainer import UnslothVisionDataCollator
 
-import json
-import os
-from omegaconf import OmegaConf
-from pathlib import Path
-from PIL import Image
 import time
-from trl import SFTTrainer, SFTConfig
-from tqdm import tqdm
 import wandb
 
-from beyond_hate.train.utils import binary_evaluation, extract_label, convert_to_conversation_inference, resize_and_pad, HateMemeDataset
+from datasets import load_dataset
+from omegaconf import OmegaConf
+from pathlib import Path
+from trl import SFTTrainer, SFTConfig
+from tqdm.auto import tqdm
+
+
+from beyond_hate.train.utils import binary_evaluation, extract_label, to_train_conversation, to_inference_conversation
 from beyond_hate.train.prompts import coarse_prompt
+from beyond_hate.logger import get_logger
 
 
 def main():
@@ -33,21 +34,17 @@ def main():
     # Override default config with custom config
     cfg = OmegaConf.merge(cfg, custom_cfg)
 
+    # Load logger
+    logs_dir = project_root / cfg.out.logs
+    logger = get_logger("train_coarse", logs_dir=logs_dir)
+
+    logger.info("Starting coarse-grained training...")
+
     # Load the data
-    # Load hate meme train set
-    hf_path = project_root / cfg.data.paths.hf
-    with open(hf_path / 'train.jsonl', 'r') as f:
-        train_data = [json.loads(line) for line in f]
-    # Just keep items with valid image paths
-    train_data = [item for item in train_data if os.path.exists(f"{hf_path}/{item['img']}")]
-
-    # Load hate meme dev set
-    hf_path = project_root / cfg.data.paths.hf
-    with open(hf_path / 'dev_seen.jsonl', 'r') as f:
-        val_data = [json.loads(line) for line in f]
-
-    # Just keep items with valid image paths
-    val_data = [item for item in val_data if os.path.exists(f"{hf_path}/{item['img']}")]
+    logger.info(f"Loading dataset: {cfg.data.final_dataset}")
+    train_ds = load_dataset(cfg.data.final_dataset, split='train')
+    val_ds = load_dataset(cfg.data.final_dataset, split='validation')
+    logger.info(f"Loaded {len(train_ds)} train samples and {len(val_ds)} validation samples")
 
     # Load prompts
     SYSTEM_TEXT = coarse_prompt['system']
@@ -56,6 +53,7 @@ def main():
     #%% Load the runs configuration
 
     runs = OmegaConf.to_container(cfg.runs)
+    logger.info(f"Running {len(runs)} training configuration(s)")
 
     #%%
     for run in tqdm(runs):
@@ -67,10 +65,12 @@ def main():
             config[h_param] = value
 
         # Prepare the dataset
-        train_dataset = HateMemeDataset(train_data, SYSTEM_TEXT, USER_TEXT, hf_path,
-                                        size=tuple(config.img_size or []), color_padding=tuple(config.img_color_padding or []))
+        logger.info("Preparing training dataset...")
+        train_dataset_converted = [to_train_conversation(d, SYSTEM_TEXT, USER_TEXT, img_size=tuple(cfg.training.img_size), img_color_padding=tuple(cfg.training.img_color_padding))
+                                   for d in tqdm(train_ds)]
 
         # Load the model and tokenizer
+        logger.info(f"Loading model: {config.model}")
         model, tokenizer = FastVisionModel.from_pretrained(
             config.model,
             load_in_4bit = config.load_in_4bit,
@@ -88,16 +88,18 @@ def main():
         # WandB setup
         current_time = time.strftime("%y%m%d-%H%M")
         output_dir = project_root / cfg.out.runs / current_time
+        logger.info(f"Initializing WandB run: {current_time}")
         wandb.init(project=cfg.wandb.project, name=current_time, dir=project_root/cfg.out.path, config=dict(config))
 
         # Train the model
+        logger.info("Starting training...")
         FastVisionModel.for_training(model)
 
         trainer = SFTTrainer(
             model = model,
             tokenizer = tokenizer,
             data_collator = UnslothVisionDataCollator(model, tokenizer),
-            train_dataset = train_dataset,
+            train_dataset = train_dataset_converted,
             args = SFTConfig(
                 per_device_train_batch_size = config.per_device_train_batch_size,
                 gradient_accumulation_steps = config.gradient_accumulation_steps,
@@ -127,22 +129,16 @@ def main():
             )
         )
         trainer.train()
+        logger.info("Training completed!")
 
-        
+        # Evaluate the model
+        logger.info("Starting evaluation on validation set...")
         FastVisionModel.for_inference(model)
+        val_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT)
+                                 for d in tqdm(val_ds)]
 
         results = []
-        for sample in tqdm(val_data):
-            label = sample['label']
-            text = sample['text']
-            
-            # Resize and pad the image if specified in the config
-            if config.img_size:
-                image = resize_and_pad(Image.open(hf_path / sample['img']), target_size=tuple(config.img_size), color=tuple(config.img_color_padding))
-            else:
-                image = Image.open(hf_path / sample['img'])
-            
-            conversation = convert_to_conversation_inference(text, SYSTEM_TEXT, USER_TEXT)
+        for conversation, image, data_id, labels in tqdm(val_dataset_converted):
 
             prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
             inputs = tokenizer(images=image, text=prompt, return_tensors="pt").to("cuda:0")
@@ -155,8 +151,8 @@ def main():
 
             results.append(
                 {
-                    'id': sample['id'],
-                    'label': label,
+                    'id': data_id,
+                    'label': labels['label_hateful'],
                     'output': output,
                 }
             )
@@ -172,8 +168,17 @@ def main():
         y_true_valid = [y_true[i] for i in valid]
         y_pred_valid = [y_pred[i] for i in valid]
         
+        logger.info(f"Valid predictions: {len(y_true_valid)}/{len(y_true)} ({len(y_true_valid)/len(y_true)*100:.1f}%)")
+        
         # Evaluate
         evaluation = binary_evaluation(y_true, y_pred)
+        
+        logger.info(f"Validation Results:")
+        logger.info(f"  Accuracy: {evaluation['accuracy']:.4f}")
+        logger.info(f"  Precision: {evaluation['precision']:.4f}")
+        logger.info(f"  Recall: {evaluation['recall']:.4f}")
+        logger.info(f"  F1 Score: {evaluation['f1_score']:.4f}")
+        logger.info(f"  Invalid Prediction Rate: {evaluation['invalid_prediction_rate']:.4f}")
 
         wandb.log({"eval/confusion_matrix": wandb.plot.confusion_matrix(
             probs=None,
@@ -191,8 +196,9 @@ def main():
             "eval/total_samples": len(y_true),
             "eval/invalid_prediction_rate": evaluation['invalid_prediction_rate']
         })
-
+        run_idx = runs.index(run) + 1
         # Finish wandb run
+        logger.info(f"Run {run_idx} completed!\n")
         wandb.finish()
 
 if __name__ == "__main__":

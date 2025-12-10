@@ -1,5 +1,5 @@
 #!/bin/bash
 set -e
 
-# Activate poetry environment and run the script
-poetry run python ../../beyond_hate/eval/eval_fine.py
+# Run fine-grained evaluation
+poetry run python -m beyond_hate.eval.eval_fine

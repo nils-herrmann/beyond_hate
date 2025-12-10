@@ -1,0 +1,20 @@
+{
+  "label_hateful": {
+    "average_agreement": 0.999,
+    "std_agreement": 0.001,
+    "average_kappa": 0.997,
+    "std_kappa": 0.002
+  },
+  "label_incivility": {
+    "average_agreement": 0.803,
+    "std_agreement": 0.14,
+    "average_kappa": 0.566,
+    "std_kappa": 0.307
+  },
+  "label_intolerance": {
+    "average_agreement": 0.757,
+    "std_agreement": 0.172,
+    "average_kappa": 0.559,
+    "std_kappa": 0.312
+  }
+}

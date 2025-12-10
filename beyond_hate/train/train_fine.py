@@ -4,21 +4,19 @@ load_dotenv()
 from unsloth import is_bf16_supported, FastVisionModel
 from unsloth.trainer import UnslothVisionDataCollator
 
-import json
-import os
-import random
 import time
-
-from omegaconf import OmegaConf
-from pathlib import Path
-from PIL import Image
-from sklearn.model_selection import train_test_split
-from trl import SFTTrainer, SFTConfig
-from tqdm import tqdm
 import wandb
 
-from beyond_hate.train.utils import binary_evaluation, convert_to_conversation_inference, extract_multi_labels, MultiVariableDataset, resize_and_pad
+from datasets import load_dataset
+from omegaconf import OmegaConf
+from pathlib import Path
+from trl import SFTTrainer, SFTConfig
+from tqdm.auto import tqdm
+
+
+from beyond_hate.train.utils import binary_evaluation, extract_multi_labels, to_inference_conversation ,to_train_conversation_multilabel
 from beyond_hate.train.prompts import fine_prompt
+from beyond_hate.logger import get_logger
 
 def main():
     # Config paths
@@ -35,60 +33,30 @@ def main():
     cfg = OmegaConf.merge(cfg, custom_cfg)
     config = cfg.training
 
+    # Load logger
+    logs_dir = project_root / cfg.out.logs
+    logger = get_logger("train_fine", logs_dir=logs_dir)
+
+    logger.info("Starting fine-grained training...")
+
     # Data paths
     hf_path = project_root / cfg.data.paths.hf
-    labels_file = project_root / cfg.data.paths.labels_file
 
     # Define system and user text from prompts
     SYSTEM_TEXT = fine_prompt['system']
     USER_TEXT = fine_prompt['user']
 
-    # Load labeled data
-    with open(labels_file, 'r') as f:
-        data = [json.loads(line) for line in f]
-    ## Get relative paths for images
-    data = [{**item, 'img': '/'.join(item['img'].split('/')[-2:])} for item in data]
-    def to_int(x):
-       try:
-           return int(x)
-       except:
-           return 0
 
-    data = [{
-    **item,
-    'label_incivility': 1 if to_int(item['label_incivility']) > 0 else 0,
-    'label_intolerance': 1 if to_int(item['label_intolerance']) > 0 else 0,
-} for item in data]
+    # Load the data
+    logger.info(f"Loading dataset: {cfg.data.final_dataset}")
+    train_ds = load_dataset(cfg.data.final_dataset, split='train')
+    val_ds = load_dataset(cfg.data.final_dataset, split='validation')
+    logger.info(f"Loaded {len(train_ds)} train samples and {len(val_ds)} validation samples")
 
-   
-    ## Just keep items with valid image paths
-    data = [item for item in data if os.path.exists(hf_path / item['img'])]
-
-    ## Set random seed for reproducibility
-    random.seed(config.seed)
-
-    # First split: 85% train+val, 15% test
-    train_val_data, test_data = train_test_split(
-        data, 
-        test_size=0.1, 
-        random_state=config.seed, 
-        stratify=[item['label_hateful'] for item in data]  # Stratify by incivility
-    )
-
-    # Second split: 85% train, 15% val from the train_val_data
-    train_data, val_data = train_test_split(
-        train_val_data, 
-        test_size=0.176,  # 0.176 * 0.85 = 0.15 of total data
-        random_state=config.seed,
-        stratify=[item['label_hateful'] for item in train_val_data]
-    )
-
-    # Split the data into training and validation sets
-    train_dataset = MultiVariableDataset(train_data, SYSTEM_TEXT, USER_TEXT, hf_path,
-                                        size=tuple(config.img_size or []), color_padding=tuple(config.img_color_padding or []))
 
     #%% Load the runs configuration
     runs = OmegaConf.to_container(cfg.runs)
+    logger.info(f"Running {len(runs)} training configuration(s)")
 
     for run in tqdm(runs):
         ## Merge configurations and set the training configuration
@@ -97,8 +65,15 @@ def main():
         ## Update the configuration with the current run parameters
         for h_param, value in run.items():
             config[h_param] = value
+            logger.info(f"  {h_param}: {value}")
+
+        # Get data
+        logger.info("Preparing training dataset...")
+        train_multilabel_converted = [to_train_conversation_multilabel(d, SYSTEM_TEXT, USER_TEXT, img_size=tuple(cfg.training.img_size), img_color_padding=tuple(cfg.training.img_color_padding))
+                                      for d in tqdm(train_ds)]
 
         # Load the model and tokenizer
+        logger.info(f"Loading model: {config.model}")
         model, tokenizer = FastVisionModel.from_pretrained(
             config.model,
             load_in_4bit = config.load_in_4bit,
@@ -116,22 +91,24 @@ def main():
         # WandB setup
         current_time = time.strftime("%y%m%d-%H%M")
         output_dir = project_root / cfg.out.runs / current_time
+        logger.info(f"Initializing WandB run: {current_time}")
         wandb.init(project=cfg.wandb.project, name=current_time, dir=project_root / cfg.out.path, config=dict(config))
 
         # Train the model
+        logger.info("Starting training...")
         FastVisionModel.for_training(model)
 
         trainer = SFTTrainer(
             model = model,
             tokenizer = tokenizer,
             data_collator = UnslothVisionDataCollator(model, tokenizer),
-            train_dataset = train_dataset,
+            train_dataset = train_multilabel_converted,
             args = SFTConfig(
                 per_device_train_batch_size = config.per_device_train_batch_size,
                 gradient_accumulation_steps = config.gradient_accumulation_steps,
                 warmup_steps = config.warmup_steps,
-                #num_train_epochs = config.num_train_epochs,
-                max_steps = 10,
+                num_train_epochs = config.num_train_epochs,
+                #max_steps = 10,
                 learning_rate = config.learning_rate,
                 fp16 = not is_bf16_supported(),
                 bf16 = is_bf16_supported(),
@@ -156,22 +133,18 @@ def main():
             )
         )
         trainer.train()
+        logger.info("Training completed!")
 
         # Inference
+        logger.info("Starting evaluation on validation set...")
         FastVisionModel.for_inference(model)
 
+        val_dataset_converted = [to_inference_conversation(d, SYSTEM_TEXT, USER_TEXT)
+                                 for d in tqdm(val_ds)]
+
         results = []
-        val_data = val_data[:30]
-        for sample in tqdm(val_data):
-            label_intolerance = sample['label_intolerance']
-            label_incivil = sample['label_incivility']
-            label_hateful = sample['label_hateful']
-            text = sample['text']
-            
-            # Resize and pad the image if specified in the config
-            image = resize_and_pad(Image.open(hf_path/sample['img']), target_size=tuple(config.img_size), color=(255, 255, 255))
-            
-            conversation = convert_to_conversation_inference(text, SYSTEM_TEXT, USER_TEXT)
+        for conversation, image, data_id, labels in tqdm(val_dataset_converted):
+
             prompt = tokenizer.apply_chat_template(conversation, add_generation_prompt=True)
             inputs = tokenizer(images=image, text=prompt, return_tensors="pt").to("cuda:0")
 
@@ -183,10 +156,10 @@ def main():
 
             results.append(
                 {
-                    'id': sample['id'],
-                    'label_intolerance': label_intolerance,
-                    'label_incivility': label_incivil,
-                    'label_hateful': label_hateful,
+                    'id': data_id,
+                    'label_intolerance': labels['label_intolerance'],
+                    'label_incivility': labels['label_incivility'],
+                    'label_hateful': labels['label_hateful'],
                     'output': output,
                 }
             )
@@ -208,6 +181,9 @@ def main():
         y_true_intolerance_valid = [y_true_intolerance[i] for i in valid_intolerance]
         y_pred_intolerance_valid = [y_pred_intolerance[i] for i in valid_intolerance]
 
+        logger.info(f"Valid incivility predictions: {len(y_true_incivil_valid)}/{len(y_true_incivil)} ({len(y_true_incivil_valid)/len(y_true_incivil)*100:.1f}%)")
+        logger.info(f"Valid intolerance predictions: {len(y_true_intolerance_valid)}/{len(y_true_intolerance)} ({len(y_true_intolerance_valid)/len(y_true_intolerance)*100:.1f}%)")
+
         # Evaluate the predictions
         evaluation_incivil = binary_evaluation(y_true_incivil, y_pred_incivil)
         evaluation_intolerance = binary_evaluation(y_true_intolerance, y_pred_intolerance)
@@ -216,6 +192,12 @@ def main():
         avg_accuracy = (evaluation_incivil['accuracy'] + evaluation_intolerance['accuracy']) / 2
         avg_f1 = (evaluation_incivil['f1_score'] + evaluation_intolerance['f1_score']) / 2
         avg_invalid_prediction_rate = (evaluation_incivil['invalid_prediction_rate'] + evaluation_intolerance['invalid_prediction_rate']) / 2
+        
+        logger.info("Validation Results:")
+        logger.info(f"  Average Accuracy: {avg_accuracy:.4f}")
+        logger.info(f"  Average F1: {avg_f1:.4f}")
+        logger.info(f"  Incivility - Accuracy: {evaluation_incivil['accuracy']:.4f}, F1: {evaluation_incivil['f1_score']:.4f}")
+        logger.info(f"  Intolerance - Accuracy: {evaluation_intolerance['accuracy']:.4f}, F1: {evaluation_intolerance['f1_score']:.4f}")
 
         wandb.log({
             'val/accuracy': avg_accuracy,
@@ -247,6 +229,7 @@ def main():
             )
         })
 
+        logger.info(f"Run {run_idx} completed!\n")
         wandb.finish()
 
 if __name__ == "__main__":

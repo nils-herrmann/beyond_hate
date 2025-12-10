@@ -3,13 +3,20 @@ data:
     base: "data"
     hf: "${data.paths.base}/hateful_memes_hf"
     labels_file: "${data.paths.base}/labels.jsonl"
+  final_dataset: "nils-herrmann/hateful_memes_multilabel"
 out:
   path: "out"
   runs: "out/runs"
+  results: "out/results"
+  logs: "logs"
+
+gpt:
+  model: "gpt-5-nano"
+  concurrent_requests: 105
 
 training:
   # Pre-trained model
-  model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
+  model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit" #unsloth/Qwen2.5-VL-7B-Instruct-unsloth-bnb-4bit
   load_in_4bit: true
   use_gradient_checkpointing: "unsloth"
   max_seq_length: 2048
