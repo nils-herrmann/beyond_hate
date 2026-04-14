@@ -92,3 +92,18 @@ beyond_hate/
 ├── poetry.lock                  # Poetry dependency lock file
 └── runpod_setup.sh              # RunPod environment setup script
 ```
+
+# Citation
+If you use this code or data in your research, please cite our paper:
+
+```bibtex
+@misc{herrmann2026hatedifferentiatinguncivilintolerant,
+      title={Beyond Hate: Differentiating Uncivil and Intolerant Speech in Multimodal Content Moderation}, 
+      author={Nils A. Herrmann and Tobias Eder and Jingyi He and Georg Groh},
+      year={2026},
+      eprint={2603.22985},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2603.22985}, 
+}
+```
