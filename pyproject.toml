@@ -1,0 +1,20 @@
+[project]
+name = "beyond_hate"
+version = "0.0.1"
+description = "Beyond Hate: Differentiating Uncivil and Intolerant Speech in Multimodal Content Moderation"
+authors = [
+    {name = "Nils A. Herrmann de Alba", email = "nils_herrmann@outlook.de"},
+    {name = "Jingyi He", email = "holly.he@tum.de"}
+    {name = "Tobias Eder", email = "tobias.eder@tum.de"}
+]
+readme = "README.md"
+license = "MIT"
+
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["beyond_hate"]
+

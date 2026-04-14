@@ -1,0 +1,43 @@
+{
+  "model": "gpt-5.1-2025-11-13",
+  "total_samples": 407,
+  "valid_incivility_samples": 407,
+  "valid_intolerance_samples": 407,
+  "avg_accuracy": 0.7727272727272727,
+  "avg_f1": 0.7742428303173453,
+  "avg_invalid_prediction_rate": 0.0,
+  "incivility": {
+    "accuracy": 0.7371007371007371,
+    "precision": 0.76315006835442,
+    "recall": 0.7371007371007371,
+    "f1_score": 0.7374372319039143,
+    "invalid_prediction_rate": 0.0,
+    "confusion_matrix": [
+      [
+        0.6551724137931034,
+        0.3448275862068966
+      ],
+      [
+        0.15428571428571428,
+        0.8457142857142858
+      ]
+    ]
+  },
+  "intolerance": {
+    "accuracy": 0.8083538083538083,
+    "precision": 0.8225170406268534,
+    "recall": 0.8083538083538083,
+    "f1_score": 0.8110484287307763,
+    "invalid_prediction_rate": 0.0,
+    "confusion_matrix": [
+      [
+        0.7890625,
+        0.2109375
+      ],
+      [
+        0.15894039735099338,
+        0.8410596026490066
+      ]
+    ]
+  }
+}

@@ -1,0 +1,224 @@
+{
+  "coarse": {
+    "wdni3pka": {
+      "model": "unsloth/Qwen2.5-VL-7B-Instruct-unsloth-bnb-4bit",
+      "run_id": "wdni3pka",
+      "analyses": {
+        "hateful": {
+          "category": "hateful",
+          "overall_accuracy": 0.82,
+          "hateful_accuracy": 0.54,
+          "non_hateful_accuracy": 0.97,
+          "false_positive_rate": 0.03,
+          "false_negative_rate": 0.46,
+          "error_difference": 0.44,
+          "counts": {
+            "true_positives": 81,
+            "true_negatives": 262,
+            "false_positives": 7,
+            "false_negatives": 70
+          }
+        }
+      }
+    },
+    "32sksqu5": {
+      "model": "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit",
+      "run_id": "32sksqu5",
+      "analyses": {
+        "hateful": {
+          "category": "hateful",
+          "overall_accuracy": 0.77,
+          "hateful_accuracy": 0.61,
+          "non_hateful_accuracy": 0.87,
+          "false_positive_rate": 0.13,
+          "false_negative_rate": 0.39,
+          "error_difference": 0.26,
+          "counts": {
+            "true_positives": 92,
+            "true_negatives": 233,
+            "false_positives": 36,
+            "false_negatives": 59
+          }
+        }
+      }
+    }
+  },
+  "fine": {
+    "nki2rqks": {
+      "model": "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit",
+      "run_id": "nki2rqks",
+      "analyses": {
+        "intolerance": {
+          "category": "intolerance",
+          "overall_accuracy": 0.76,
+          "intolerance_accuracy": 0.63,
+          "non_intolerance_accuracy": 0.83,
+          "false_positive_rate": 0.17,
+          "false_negative_rate": 0.37,
+          "error_difference": 0.19,
+          "counts": {
+            "true_positives": 99,
+            "true_negatives": 219,
+            "false_positives": 45,
+            "false_negatives": 57
+          }
+        },
+        "incivility": {
+          "category": "incivility",
+          "overall_accuracy": 0.78,
+          "incivility_accuracy": 0.75,
+          "non_incivility_accuracy": 0.8,
+          "false_positive_rate": 0.2,
+          "false_negative_rate": 0.25,
+          "error_difference": 0.05,
+          "counts": {
+            "true_positives": 138,
+            "true_negatives": 188,
+            "false_positives": 47,
+            "false_negatives": 47
+          }
+        }
+      }
+    },
+    "8rhjtcdu": {
+      "model": "unsloth/Qwen2.5-VL-7B-Instruct-unsloth-bnb-4bit",
+      "run_id": "8rhjtcdu",
+      "analyses": {
+        "intolerance": {
+          "category": "intolerance",
+          "overall_accuracy": 0.82,
+          "intolerance_accuracy": 0.66,
+          "non_intolerance_accuracy": 0.92,
+          "false_positive_rate": 0.08,
+          "false_negative_rate": 0.34,
+          "error_difference": 0.26,
+          "counts": {
+            "true_positives": 103,
+            "true_negatives": 243,
+            "false_positives": 21,
+            "false_negatives": 53
+          }
+        },
+        "incivility": {
+          "category": "incivility",
+          "overall_accuracy": 0.8,
+          "incivility_accuracy": 0.7,
+          "non_incivility_accuracy": 0.87,
+          "false_positive_rate": 0.13,
+          "false_negative_rate": 0.3,
+          "error_difference": 0.18,
+          "counts": {
+            "true_positives": 129,
+            "true_negatives": 205,
+            "false_positives": 30,
+            "false_negatives": 56
+          }
+        }
+      }
+    }
+  },
+  "joint": {
+    "qj2shp9p": {
+      "model": "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit",
+      "run_id": "qj2shp9p",
+      "analyses": {
+        "hateful": {
+          "category": "hateful",
+          "overall_accuracy": 0.79,
+          "hateful_accuracy": 0.6,
+          "non_hateful_accuracy": 0.9,
+          "false_positive_rate": 0.1,
+          "false_negative_rate": 0.4,
+          "error_difference": 0.3,
+          "counts": {
+            "true_positives": 91,
+            "true_negatives": 242,
+            "false_positives": 27,
+            "false_negatives": 60
+          }
+        },
+        "intolerance": {
+          "category": "intolerance",
+          "overall_accuracy": 0.8,
+          "intolerance_accuracy": 0.65,
+          "non_intolerance_accuracy": 0.89,
+          "false_positive_rate": 0.11,
+          "false_negative_rate": 0.35,
+          "error_difference": 0.24,
+          "counts": {
+            "true_positives": 102,
+            "true_negatives": 235,
+            "false_positives": 29,
+            "false_negatives": 54
+          }
+        },
+        "incivility": {
+          "category": "incivility",
+          "overall_accuracy": 0.82,
+          "incivility_accuracy": 0.72,
+          "non_incivility_accuracy": 0.89,
+          "false_positive_rate": 0.11,
+          "false_negative_rate": 0.28,
+          "error_difference": 0.17,
+          "counts": {
+            "true_positives": 134,
+            "true_negatives": 209,
+            "false_positives": 26,
+            "false_negatives": 51
+          }
+        }
+      }
+    },
+    "t1c0jd4t": {
+      "model": "unsloth/Qwen2.5-VL-7B-Instruct-unsloth-bnb-4bit",
+      "run_id": "t1c0jd4t",
+      "analyses": {
+        "hateful": {
+          "category": "hateful",
+          "overall_accuracy": 0.83,
+          "hateful_accuracy": 0.67,
+          "non_hateful_accuracy": 0.93,
+          "false_positive_rate": 0.07,
+          "false_negative_rate": 0.33,
+          "error_difference": 0.26,
+          "counts": {
+            "true_positives": 101,
+            "true_negatives": 249,
+            "false_positives": 20,
+            "false_negatives": 50
+          }
+        },
+        "intolerance": {
+          "category": "intolerance",
+          "overall_accuracy": 0.81,
+          "intolerance_accuracy": 0.62,
+          "non_intolerance_accuracy": 0.92,
+          "false_positive_rate": 0.08,
+          "false_negative_rate": 0.38,
+          "error_difference": 0.31,
+          "counts": {
+            "true_positives": 96,
+            "true_negatives": 243,
+            "false_positives": 21,
+            "false_negatives": 60
+          }
+        },
+        "incivility": {
+          "category": "incivility",
+          "overall_accuracy": 0.81,
+          "incivility_accuracy": 0.81,
+          "non_incivility_accuracy": 0.81,
+          "false_positive_rate": 0.19,
+          "false_negative_rate": 0.19,
+          "error_difference": 0.01,
+          "counts": {
+            "true_positives": 149,
+            "true_negatives": 191,
+            "false_positives": 44,
+            "false_negatives": 36
+          }
+        }
+      }
+    }
+  }
+}

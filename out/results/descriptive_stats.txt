@@ -1,0 +1,42 @@
+============================================================
+DESCRIPTIVE STATISTICS - HATEFUL MEMES DATASET
+============================================================
+
+FULL DATASET STATISTICS
+------------------------------------------------------------
+Total samples: 9664
+
+Label distribution (normalized):
+  Label 0: 0.63
+  Label 1: 0.37
+
+============================================================
+ANNOTATED SUBSET STATISTICS
+------------------------------------------------------------
+Total annotated samples: 2030
+
+Marginal distribution for label_hateful:
+  0: 0.65
+  1: 0.35
+
+Marginal distribution for label_intolerance:
+  0: 0.63
+  1: 0.37
+
+Marginal distribution for label_incivility:
+  0: 0.56
+  1: 0.44
+
+============================================================
+CROSS-TABULATION
+------------------------------------------------------------
+Intolerance vs. Incivility (normalized):
+
+label_intolerance     0     1
+label_incivility             
+0                  0.50  0.06
+1                  0.13  0.31
+
+============================================================
+END OF DESCRIPTIVE STATISTICS
+============================================================

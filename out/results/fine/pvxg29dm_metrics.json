@@ -1,0 +1,44 @@
+{
+  "model": "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit",
+  "task": "transfer",
+  "total_samples": 407,
+  "avg_accuracy": 0.7239119645603436,
+  "avg_f1": 0.7246969820289693,
+  "avg_invalid_prediction_rate": 0.007371007371007371,
+  "incivility": {
+    "valid_samples": 407,
+    "accuracy": 0.7371007371007371,
+    "precision": 0.7357459867341289,
+    "recall": 0.7371007371007371,
+    "f1_score": 0.734401968619999,
+    "invalid_prediction_rate": 0.0,
+    "confusion_matrix": [
+      [
+        0.8146551724137931,
+        0.1853448275862069
+      ],
+      [
+        0.3657142857142857,
+        0.6342857142857142
+      ]
+    ]
+  },
+  "intolerance": {
+    "valid_samples": 401,
+    "accuracy": 0.7107231920199502,
+    "precision": 0.7318975447474954,
+    "recall": 0.7107231920199502,
+    "f1_score": 0.7149919954379395,
+    "invalid_prediction_rate": 0.014742014742014743,
+    "confusion_matrix": [
+      [
+        0.692,
+        0.308
+      ],
+      [
+        0.2582781456953642,
+        0.7417218543046358
+      ]
+    ]
+  }
+}

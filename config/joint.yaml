@@ -1,0 +1,32 @@
+validation:
+  batch_size: 32
+
+runs:
+- model: "unsloth/Qwen2.5-VL-7B-Instruct-unsloth-bnb-4bit"
+  lora_r: 64
+  lora_alpha: 128
+  lora_dropout: 0.0
+  learning_rate: 0.0002
+  weight_decay: 0.05
+  num_train_epochs: 3
+  save_strategy: "epoch"
+  save_total_limit: 2
+- model: "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit"
+  lora_r: 128
+  lora_alpha: 256
+  lora_dropout: 0.05
+  learning_rate: 0.00005
+  weight_decay: 0.1
+  num_train_epochs: 3
+  save_strategy: "epoch"
+  save_total_limit: 2
+
+evaluation:
+  batch_size: 32
+  tasks:
+    base:
+      - checkpoint_path: "${out.runs}/joint/260109-1056/checkpoint-534"
+      - checkpoint_path: "${out.runs}/joint/260109-1133/checkpoint-356"
+
+wandb:
+  project: "beyond_hate_joint"

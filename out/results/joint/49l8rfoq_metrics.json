@@ -1,0 +1,62 @@
+{
+  "model": "unsloth/llava-v1.6-mistral-7b-hf-bnb-4bit",
+  "task": "base",
+  "total_samples": 407,
+  "avg_accuracy": 0.7690417690417691,
+  "avg_f1": 0.7571543916163487,
+  "avg_invalid_prediction_rate": 0.0,
+  "incivility": {
+    "valid_samples": 407,
+    "accuracy": 0.7862407862407862,
+    "precision": 0.7947243019445184,
+    "recall": 0.7862407862407862,
+    "f1_score": 0.7799207450726018,
+    "invalid_prediction_rate": 0.0,
+    "confusion_matrix": [
+      [
+        0.9094827586206896,
+        0.09051724137931035
+      ],
+      [
+        0.37714285714285717,
+        0.6228571428571429
+      ]
+    ]
+  },
+  "intolerance": {
+    "valid_samples": 407,
+    "accuracy": 0.7567567567567568,
+    "precision": 0.759246183482518,
+    "recall": 0.7567567567567568,
+    "f1_score": 0.7414725309462151,
+    "invalid_prediction_rate": 0.0,
+    "confusion_matrix": [
+      [
+        0.9140625,
+        0.0859375
+      ],
+      [
+        0.5099337748344371,
+        0.4900662251655629
+      ]
+    ]
+  },
+  "hateful": {
+    "valid_samples": 407,
+    "accuracy": 0.7641277641277642,
+    "precision": 0.7635311246645652,
+    "recall": 0.7641277641277642,
+    "f1_score": 0.7500698988302295,
+    "invalid_prediction_rate": 0.0,
+    "confusion_matrix": [
+      [
+        0.9118773946360154,
+        0.08812260536398467
+      ],
+      [
+        0.5,
+        0.5
+      ]
+    ]
+  }
+}
