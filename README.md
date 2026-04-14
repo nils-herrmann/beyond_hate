@@ -3,7 +3,7 @@
 This project advances multimodal toxic speech detection by distinguishing between tone (incivility) and content (intolerance) in hateful meme classification. We propose a fine-grained annotation scheme that moves beyond binary hateful/not-hateful labels, enabling more nuanced and accurate content moderation through improved data quality and model training.
 
 ## Paper
-The full paper is available in [BeyondHate.pdf](./BeyondHate.pdf).
+The full paper is available in [arxiv](https://arxiv.org/abs/2603.22985).
 
 ## Installation guide
 ### 1. Clone repository
